@@ -1,0 +1,31 @@
+#!/bin/bash
+
+#check for sudo
+if [ "$EUID" -ne 0 ]; then
+	echo "Permission Denied: You can only update the database using sudo or as the root user"
+	exit 1
+fi
+
+
+#clear the directory
+user="${SUDO_USER:-$USER}"
+echo "Curent User: $user"
+userHome="$(eval echo "~$user")"
+vpnDir="$userHome/.config/gooeyplate/vpns"
+
+mkdir -p "$vpnDir"
+
+rm -f "$vpnDir"/*
+
+
+#copy the vpn.conf files stripped of keys
+for file in /etc/wireguard/*.conf; do
+	
+	name="$(basename "$file" .conf)"
+
+	grep -vE "^(PrivateKey|PublicKey)" "$file" \
+		> "$vpnDir/$name.conf"
+
+	echo "$file stripped of PrivateKeys and added to $vpnDir"
+
+done
